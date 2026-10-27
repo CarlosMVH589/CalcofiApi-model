@@ -1,0 +1,7 @@
+# Entorno virtual de Python (evita que se suban miles de archivos pesados)
+ml-env/
+
+# Caché de Python
+__pycache__/
+*.py[cod]
+*$py.class
