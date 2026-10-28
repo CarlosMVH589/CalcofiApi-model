@@ -1,5 +1,14 @@
 services:
   - type: web
+    name: calcofi-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    envVars:
+      - key: PORT
+        value: 10000
+
+  - type: web
     name: calcofi-frontend
     runtime: static
     buildCommand: cd frontend && npm ci && npm run build
