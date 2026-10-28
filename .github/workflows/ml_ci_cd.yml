@@ -29,6 +29,12 @@ jobs:
       - name: pip install
         run: pip install -r requirements.txt
 
+      - name: download dataset 
+        run: wget -O data/bottle.csv ${{github.event.client_payload.dataseturl}} 
+        
+      - name: cat dataset 
+        run: cat data/bottle.csv
+
       - name: train model
         run: python model/train.py
 
