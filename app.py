@@ -1,5 +1,6 @@
+import os
 from fastapi import FastAPI
-from fastapi.responses import RedirectResponse # <-- Importante añadir esto
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 import numpy as np
 from joblib import load
@@ -7,6 +8,9 @@ import pathlib
 from fastapi.middleware.cors import CORSMiddleware
 
 origins = ["*"]
+
+model_path = pathlib.Path(__file__).resolve().parent / 'model' / 'calcofi-v1.joblib'
+port = int(os.getenv('PORT', '10000'))
 
 app = FastAPI(title='CalCOFI Temperature Prediction API')
 
@@ -26,7 +30,6 @@ def root():
 # ---------------------------------
 
 # Cargar el modelo entrenado previamente
-model_path = pathlib.Path('model/calcofi-v1.joblib')
 model = load(model_path)
 
 class InputData(BaseModel):
@@ -35,6 +38,10 @@ class InputData(BaseModel):
 
 class OutputData(BaseModel):
     predicted_temperature: float
+
+@app.get('/health')
+def health():
+    return {'status': 'ok'}
 
 @app.post('/score', response_model=OutputData)
 def score(data: InputData):
