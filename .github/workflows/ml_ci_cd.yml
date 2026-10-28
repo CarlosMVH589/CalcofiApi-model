@@ -13,13 +13,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: Pull Git LFS files
         run: git lfs pull
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
@@ -59,7 +59,22 @@ jobs:
         run: python model/train.py
 
       - name: docker build
-        run: docker build -t ${{ secrets.DOCKER_USER}}/${{secrets.MODEL_NAME}}:$TRAINING_SHA .
+        env:
+          DOCKER_USER: ${{ secrets.DOCKER_USER }}
+          MODEL_NAME: ${{ secrets.MODEL_NAME }}
+        run: |
+          set -euo pipefail
+          : "${DOCKER_USER:?The DOCKER_USER secret is required}"
+          : "${MODEL_NAME:?The MODEL_NAME secret is required}"
+          : "${TRAINING_SHA:?TRAINING_SHA must be resolved before building}"
+          case "$TRAINING_SHA" in
+            ''|*[!A-Za-z0-9._-]*)
+              echo "TRAINING_SHA contains characters that are invalid in a Docker tag." >&2
+              exit 1
+              ;;
+          esac
+          IMAGE="$DOCKER_USER/$MODEL_NAME:$TRAINING_SHA"
+          docker buildx build --load --tag "$IMAGE" .
 
       - name: show images
         run: docker images
@@ -72,4 +87,9 @@ jobs:
           printf '%s' "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USER" --password-stdin
 
       - name: docker Push
-        run: docker push ${{ secrets.DOCKER_USER}}/${{secrets.MODEL_NAME}}:$TRAINING_SHA
+        env:
+          DOCKER_USER: ${{ secrets.DOCKER_USER }}
+          MODEL_NAME: ${{ secrets.MODEL_NAME }}
+        run: |
+          set -euo pipefail
+          docker push "$DOCKER_USER/$MODEL_NAME:$TRAINING_SHA"
