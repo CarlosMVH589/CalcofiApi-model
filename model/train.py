@@ -10,7 +10,7 @@ pathlib.Path('model').mkdir(parents=True, exist_ok=True)
 
 # 2. Cargar y limpiar el dataset de CalCOFI
 print("Cargando dataset...")
-ruta_csv = pathlib.Path('../data/bottle.csv')
+ruta_csv = pathlib.Path('data/bottle.csv')
 df = pd.read_csv(ruta_csv, usecols=['Depthm', 'Salnty', 'T_degC'], low_memory=False).dropna()
 
 y = df['T_degC']
