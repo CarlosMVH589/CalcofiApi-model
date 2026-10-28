@@ -1,0 +1,98 @@
+<main class="page-shell">
+  <header class="hero">
+    <div class="hero-copy">
+      <p class="eyebrow">CalCOFI · laboratorio de datos marinos</p>
+      <h1>🌊 Predicción Oceanográfica Calcofi</h1>
+      <p class="hero-text">
+        Estima la temperatura del océano a partir de profundidad y salinidad con modelos
+        entrenados usando diferentes muestras del dataset CalCOFI.
+      </p>
+    </div>
+    <div class="wave-mark" aria-hidden="true">
+      <span></span><span></span><span></span>
+    </div>
+  </header>
+
+  <div class="dashboard-grid">
+    <section class="panel prediction-panel" aria-labelledby="prediction-title">
+      <div class="section-heading">
+        <div>
+          <p class="section-kicker">01 · inferencia</p>
+          <h2 id="prediction-title">Consultar predicción</h2>
+        </div>
+        <span class="status-dot">API activa</span>
+      </div>
+
+      <form (ngSubmit)="calculatePrediction()" #predictionForm="ngForm">
+        <label for="model">Modelo de predicción</label>
+        <select id="model" name="model" [(ngModel)]="selectedModel">
+          <option *ngFor="let model of predictionModels" [ngValue]="model">{{ model.label }}</option>
+        </select>
+
+        <div class="field-row">
+          <div>
+            <label for="depthm">Profundidad <span>(Depthm)</span></label>
+            <input id="depthm" name="depthm" type="number" step="any" [(ngModel)]="depthm" required>
+            <small>Metros bajo la superficie</small>
+          </div>
+          <div>
+            <label for="salnty">Salinidad <span>(Salnty)</span></label>
+            <input id="salnty" name="salnty" type="number" step="any" [(ngModel)]="salnty" required>
+            <small>Valor práctico: 33.5</small>
+          </div>
+        </div>
+
+        <button class="primary-button" type="submit" [disabled]="predictionLoading || predictionForm.invalid">
+          {{ predictionLoading ? 'Consultando modelo...' : 'Calcular predicción' }}
+        </button>
+      </form>
+
+      <div *ngIf="predictionError" class="message error" role="alert">{{ predictionError }}</div>
+
+      <div *ngIf="prediction !== null" class="result-card" role="status">
+        <p class="result-label">Resultado del modelo</p>
+        <p class="result-value">{{ prediction | number:'1.2-2' }} <span>°C</span></p>
+        <p class="result-model">{{ selectedModel.label }}</p>
+        <p class="result-inputs">Depthm {{ depthm }} m · Salnty {{ salnty }}</p>
+      </div>
+    </section>
+
+    <section class="panel retraining-panel" aria-labelledby="retraining-title">
+      <div class="section-heading">
+        <div>
+          <p class="section-kicker">02 · automatización</p>
+          <h2 id="retraining-title">Re-entrenar modelo Calcofi</h2>
+        </div>
+        <span class="github-badge">GitHub Actions</span>
+      </div>
+
+      <p class="panel-intro">Selecciona la fuente de datos y envía un evento al workflow de entrenamiento.</p>
+      <form (ngSubmit)="dispatchRetraining()" #retrainingForm="ngForm">
+        <label for="dataset">Dataset de entrenamiento</label>
+        <select id="dataset" name="dataset" [(ngModel)]="selectedDataset" (ngModelChange)="selectDataset()">
+          <option *ngFor="let dataset of trainingDatasets" [ngValue]="dataset">{{ dataset.label }}</option>
+        </select>
+        <small class="url-preview">{{ selectedDataset.url }}</small>
+
+        <label for="sha">SHA identificador del re-entrenamiento</label>
+        <input id="sha" name="sha" type="text" [(ngModel)]="retrainingSha" required>
+
+        <label for="github-token">GitHub Personal Access Token</label>
+        <input id="github-token" name="github-token" type="password" [(ngModel)]="githubToken" autocomplete="off" required>
+
+        <button class="secondary-button" type="submit" [disabled]="retrainingLoading || retrainingForm.invalid">
+          {{ retrainingLoading ? 'Enviando evento...' : 'Disparar re-entrenamiento' }}
+        </button>
+      </form>
+
+      <div *ngIf="retrainingMessage" class="message success" role="status">{{ retrainingMessage }}</div>
+      <div *ngIf="retrainingError" class="message error" role="alert">{{ retrainingError }}</div>
+      <p class="security-note">🔒 El token se usa solo durante esta solicitud y se limpia al terminar. Para producción, usa un backend intermedio o una GitHub App.</p>
+    </section>
+  </div>
+
+  <footer>
+    <span>Modelo activo: {{ selectedModel.percentage }}% del dataset</span>
+    <span>Contrato API: <code>POST /score</code></span>
+  </footer>
+</main>

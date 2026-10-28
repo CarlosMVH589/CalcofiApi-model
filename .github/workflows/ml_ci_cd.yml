@@ -29,17 +29,37 @@ jobs:
       - name: pip install
         run: pip install -r requirements.txt
 
-      - name: download dataset 
-        run: wget -O data/bottle.csv ${{github.event.client_payload.dataseturl}} 
-        
-      - name: cat dataset 
-        run: cat data/bottle.csv
+      - name: Resolve training inputs
+        env:
+          DATASET_URL: ${{ github.event.client_payload.dataseturl }}
+          TRAINING_SHA: ${{ github.event.client_payload.sha }}
+        run: |
+          set -euo pipefail
+
+          DATASET_URL="${DATASET_URL:-https://github.com/CarlosMVH589/CalcofiApi-model/releases/download/v1.0.0/bottle.csv}"
+          TRAINING_SHA="${TRAINING_SHA:-automatic-${GITHUB_SHA}}"
+
+          printf 'DATASET_URL=%s\n' "$DATASET_URL" >> "$GITHUB_ENV"
+          printf 'TRAINING_SHA=%s\n' "$TRAINING_SHA" >> "$GITHUB_ENV"
+
+      - name: Download Calcofi dataset
+        run: |
+          set -euo pipefail
+          mkdir -p data
+          curl --fail --location --retry 3 --silent --show-error \
+            --output data/bottle.csv "$DATASET_URL"
+          test -s data/bottle.csv
+          {
+            echo "### Calcofi ML training input"
+            echo "- Dataset: \`$DATASET_URL\`"
+            echo "- Training SHA: \`$TRAINING_SHA\`"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: train model
         run: python model/train.py
 
       - name: docker build
-        run: docker build -t ${{ secrets.DOCKER_USER}}/${{secrets.MODEL_NAME}}:${{github.event.client_payload.sha}} .
+        run: docker build -t ${{ secrets.DOCKER_USER}}/${{secrets.MODEL_NAME}}:$TRAINING_SHA .
 
       - name: show images
         run: docker images
@@ -49,7 +69,7 @@ jobs:
           DOCKER_USER: ${{secrets.DOCKER_USER}}
           DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
         run: |
-          docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
+          printf '%s' "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USER" --password-stdin
 
       - name: docker Push
-        run: docker push ${{ secrets.DOCKER_USER}}/${{secrets.MODEL_NAME}}:${{github.event.client_payload.sha}}
+        run: docker push ${{ secrets.DOCKER_USER}}/${{secrets.MODEL_NAME}}:$TRAINING_SHA
