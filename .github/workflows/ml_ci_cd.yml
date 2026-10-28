@@ -1,0 +1,19 @@
+name: CalcofiApi-model CI/CD
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  repository_dispatch:
+    types: [ ml_ci_cd ]
+
+jobs:
+  ml_ci_cd:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: show python version
+        run: python --version
